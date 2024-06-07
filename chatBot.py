@@ -16,7 +16,7 @@ def secretKey(keyName):
             if st.secrets[str(keyName)] not in ["", "PASTE YOUR API KEY HERE"]: # Checks of the value corresponding to the key exists by checking if it's not empty or the default string
                 return st.secrets[str(keyName)]
     
-    return False # If there is no key, return None
+    return None # If there is no key, return None
 
 # Decalre global variables         
 global chatbot_response # Sets chatbot response to a global variable so it can be accessed whenever
@@ -30,21 +30,16 @@ doGen = False
 with st.sidebar:
     # Cohere api key setup
     cohereapiKey = secretKey("COHEREAPIKEY")
-    if(not cohereapiKey): # If there is no api key
-        cohereapiKey = st.text_input("Cohere API Key", key="cohere_api_key", type="password")
-        st.markdown("[Get a Cohere API Key](https://dashboard.cohere.ai/api-keys)")
+    cohereapiKey = st.text_input("Cohere API Key", key="cohere_api_key", type="password", value = cohereapiKey)
+    st.markdown("[Get a Cohere API Key](https://dashboard.cohere.ai/api-keys)")
 
     # Eden api key setup
     edenapiKey = secretKey("EDENAPIKEY")
-    if(not edenapiKey): # if there is no api key
-        edenapiKey = st.text_input("Eden API Key", key = "eden_api_key", type = "password")
-        st.markdown("[Get a Eden API Key](https://app.edenai.run/admin/api-settings/features-preferences)")
+    edenapiKey = st.text_input("Eden API Key", key = "eden_api_key", type = "password", value = edenapiKey)
+    st.markdown("[Get a Eden API Key](https://app.edenai.run/admin/api-settings/features-preferences)")
 
     # Option for image generation
     doGen = st.checkbox("Do you want a flowchart to be generated? This is a beta feature and is very nonfunctional")
-
-    st.markdown("List of Links:")
-
     
 
 # Title
@@ -63,6 +58,13 @@ for msg in st.session_state.messages:
 # Get user input
 if prompt := st.chat_input():
     # Stop responding if the user has not added the Cohere API key
+
+    # Logic to make if statements possible
+    if cohereapiKey == None:
+        cohereapiKey = False
+    if edenapiKey == None:
+        edenapiKey == False
+    
     if not cohereapiKey and not edenapiKey:
         st.info("Please add your Cohere and Eden API key to continue.")
         st.stop()
@@ -189,7 +191,8 @@ if prompt := st.chat_input():
 
                         response = requests.post(url, json=payload, headers=headers) # We use directly request the API with a JSON payload
                         genResults = json.loads(response.text) # load json and format
-                        yield "Image Generated"
+                        yield "\n Image Generated"
+                        yield genResults
                         st.image(genResults["amazon"]["items"][0]["image_resource_url"]) # Based on the JSON responce, locate the place where the url is embedded. then display as image
 
 
@@ -207,29 +210,10 @@ if prompt := st.chat_input():
     # Add the response to the chat history
     st.session_state.messages.append({"role": "assistant", "text": chatbot_response})
 
-    """ Doesn't work because streamlit syntax is hella annoying for some reason
-    with st.sidebar:
-
-        # Link regeneration function for sidebar
-        def regenLink(index):
-            print("function called")
-            global linkList
-            newLink = client.chat(message = str(linkList[index]), # Regenerate a link based on the index provided
-                        prompt_truncation = "AUTO",
-                        connectors = [{"id": "web-search"}],
-                        preamble = newLinkPreamble).text
-            
-            linkList[index]
-
-        selectedLink = st.selectbox("Which Link would you like to regenerate?", linkList)
-        if(selectedLink == None):
-            st.markdown("No Link Selected")
-        else:
-            linkIndex = linkList.index(selectedLink)
-            if(st.button("Regenerate Link")):
-                regenLink(linkList.index(linkIndex))
-                st.markdown(f"Try This Link: {linkList[linkIndex]}")
-    """
+with st.sidebar:
+    st.markdown("List of Links:")
+    for i in range(len(linkList)):
+        st.markdown(linkList[i])
 
 
 
